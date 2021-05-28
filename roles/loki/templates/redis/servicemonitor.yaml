@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: '{{ ansible_operator_meta.name }}-redis'
+  namespace: '{{ ansible_operator_meta.namespace }}'
+  labels:
+    plugins.cloudminds.com/loki: loki-redis
+    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+spec:
+  jobLabel: jobLabel
+  selector:
+    matchLabels:
+      plugins.cloudminds.com/loki: loki-redis
+      app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+  endpoints:
+    - port: metrics
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: host
+  namespaceSelector:
+    matchNames: 
+    - '{{ ansible_operator_meta.namespace }}'

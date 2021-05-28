@@ -1,0 +1,12 @@
+- name: Loki Operator | Loki | StatefulSet
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'loki/statefulset.yaml') | from_yaml }}"
+
+- name: Loki Operator | Loki | Service
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'loki/service.yaml') | from_yaml }}"
+
+- name: Loki Operator | Loki | ServiceMonitor
+  community.kubernetes.k8s:
+    state: '{{"present" if servicemonitor else "absent"}}'
+    definition: "{{ lookup('template', 'loki/servicemonitor.yaml') | from_yaml }}"

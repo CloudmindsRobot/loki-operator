@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: '{{ ansible_operator_meta.name }}-redis-data'
+  namespace: '{{ ansible_operator_meta.namespace }}'
+  labels:
+    plugins.cloudminds.com/loki: loki-redis
+    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

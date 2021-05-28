@@ -1,0 +1,30 @@
+- name: Loki Operator | Cache | PersistentVolumeClaims 
+  community.kubernetes.k8s:
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    definition: "{{ lookup('template', 'redis/pvc.yaml') | from_yaml }}"
+
+- name: Loki Operator | Cache | ConfigMap 
+  community.kubernetes.k8s:
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    definition: "{{ lookup('template', 'redis/configmap.yaml') | from_yaml }}"
+    
+- name: Loki Operator | Cache | StatefulSet 
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'redis/statefulset.yaml') | from_yaml }}"
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+
+- name: Loki Operator | Cache | Services 
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'redis/service.yaml') | from_yaml }}"
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+
+- name: Loki Operator | Cache | Metrics
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'redis/metrics.yaml') | from_yaml }}"
+    state: '{{"present" if servicemonitor and servicemonitor else "absent"}}'
+      
+- name: Loki Operator | Cache | ServicesMonitor 
+  ignore_errors: yes
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'redis/servicemonitor.yaml') | from_yaml }}"
+    state: '{{"present" if servicemonitor and servicemonitor else "absent"}}'

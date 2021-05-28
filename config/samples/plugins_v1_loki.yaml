@@ -1,0 +1,68 @@
+apiVersion: plugins.cloudminds.com/v1
+kind: Loki
+metadata:
+  name: loki-sample
+  annotations:
+    ansible.operator-sdk/reconcile-period: "30s"
+spec:
+  version: 2.2.1
+  multitenancy: false
+  servicemonitor: false
+  service: 
+    #mode: single
+    mode: cluster
+    cluster:
+      replication_factor: 2
+      ring:
+        #memberlist, consul
+        type: memberlist
+        #@consul:
+        #@  deploy: true
+      gateway:
+        image: harbor.cloudminds.com/gemscloud/nginx
+        tag: 1.15.1-alpine
+        replicas: 2
+      frontend:
+        image: harbor.cloudminds.com/gemscloud/loki
+        replicas: 2 
+      loki:
+        image: harbor.cloudminds.com/gemscloud/loki
+        replicas: 3
+  cacheconfig: 
+    enabled: false
+    expiration: 1h
+    type: redis
+    redis:
+      image: harbor.cloudminds.com/gemscloud/redis
+      tag: 5.0.6
+      external:
+        address: xxxx
+        port: 6379
+
+  ruler:
+    enabled: true
+    ring: memberlist
+    alertmanager: http://xxxxxxx
+    storage: s3
+    s3:
+      bucket: loki-ruler-operator
+
+  schemaconfig:
+    #index： boltdb-shipper, cassandra
+    index: boltdb-shipper
+    #chunk： boltdb-shipper, s3
+    chunk: s3
+
+  storageconfig:
+    boltdb_shipper:
+      #shared_store: s3, filesystem
+      shared_store: s3
+
+    filesystem:
+      directory: /loki/chunks
+
+    s3:
+      address: 10.51.201.22
+      secret_key: xPfIfXBjqMnt62dZA9c2wXXCmLVPaMUOmMBt3M6H
+      access_key: 5373OR9D1ZA5UD6FWE6O
+      bucket: loki-operator

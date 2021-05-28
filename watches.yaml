@@ -1,0 +1,7 @@
+---
+# Use the 'create api' subcommand to add watches to this file.
+- version: v1
+  group: plugins.cloudminds.com
+  kind: Loki
+  playbook: playbooks/loki.yml
+#+kubebuilder:scaffold:watch
