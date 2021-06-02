@@ -1,23 +1,30 @@
 apiVersion: plugins.cloudminds.com/v1
 kind: Loki
 metadata:
-  name: loki-sample
+  name: loki
   annotations:
     ansible.operator-sdk/reconcile-period: "30s"
 spec:
   version: 2.2.1
-  multitenancy: false
+  grafana: 
+    enabled: true
+  multitenancy: true
   servicemonitor: false
   service: 
-    #mode: single
-    mode: cluster
+  #mode: single,cluster
+    mode: single
+    single:
+      loki:
+        image: harbor.cloudminds.com/gemscloud/loki
     cluster:
+      #type: ha, microservices
+      type: ha
       replication_factor: 2
       ring:
         #memberlist, consul
         type: memberlist
-        #@consul:
-        #@  deploy: true
+        #consul:
+        #  deploy: true
       gateway:
         image: harbor.cloudminds.com/gemscloud/nginx
         tag: 1.15.1-alpine
@@ -28,16 +35,38 @@ spec:
       loki:
         image: harbor.cloudminds.com/gemscloud/loki
         replicas: 3
+      #microservices:
+      #  ingester:
+      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    replicas: 3
+      #  distributor:
+      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    replicas: 3
+      #  querier:
+      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    replicas: 3
+      #  ruler:
+      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    replicas: 2
+      #  table-manager:
+      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    replicas: 2
   cacheconfig: 
-    enabled: false
+    enabled: true
     expiration: 1h
     type: redis
     redis:
       image: harbor.cloudminds.com/gemscloud/redis
       tag: 5.0.6
-      external:
-        address: xxxx
-        port: 6379
+      #external:
+      #  address: xxxx
+      #  port: 6379
+    memcached:
+      image: docker.io/bitnami/memcached
+      tag: 1.6.9-debian-10-r114
+      #external:
+      #  address: xxxx
+      #  port: 11211
 
   ruler:
     enabled: true
@@ -50,7 +79,7 @@ spec:
   schemaconfig:
     #index： boltdb-shipper, cassandra
     index: boltdb-shipper
-    #chunk： boltdb-shipper, s3
+    #chunk： filesystem, s3
     chunk: s3
 
   storageconfig:

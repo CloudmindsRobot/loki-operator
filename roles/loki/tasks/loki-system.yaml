@@ -1,9 +1,11 @@
 - name: Loki Operator | Loki | StatefulSet
   community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "single" or service.cluster.type == "ha" else "absent"}}'
     definition: "{{ lookup('template', 'loki/statefulset.yaml') | from_yaml }}"
 
 - name: Loki Operator | Loki | Service
   community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "single" or service.cluster.type == "ha" else "absent"}}'
     definition: "{{ lookup('template', 'loki/service.yaml') | from_yaml }}"
 
 - name: Loki Operator | Loki | ServiceMonitor

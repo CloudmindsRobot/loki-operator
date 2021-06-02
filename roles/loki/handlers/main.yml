@@ -1,2 +1,79 @@
 ---
 # handlers file for Loki
+- name: Scale down single loki 
+  when: '{{service.mode == "single"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-system'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: 0
+    wait: yes
+
+- name: Scale up single loki 
+  when: '{{service.mode == "single"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-system'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: 1
+    wait: no
+
+- name: Scale down ha loki system
+  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-system'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: 0
+    wait: yes
+
+- name: Scale up ha loki system
+  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-system'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: '{{service.cluster.loki.replicas}}'
+    wait: no
+
+- name: Scale down ha loki frontend
+  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-frontend'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: 0
+    wait: yes
+
+- name: Scale up ha loki frontend
+  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+  community.kubernetes.k8s_scale:
+    api_version: v1
+    kind: StatefulSet
+    name: '{{ansible_operator_meta.name}}-loki-system'
+    namespace: '{{ansible_operator_meta.namespace}}'
+    replicas: '{{service.cluster.frontend.replicas}}'
+    wait: no
+
+#- name: Scale down microservices loki
+#  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+#  community.kubernetes.k8s_scale:
+#    resource_definition: "{{ lookup('template', item.name) | from_yaml }}"
+#    replicas: 0
+#  lookup:
+#    - name: frontend/statefulset.yaml
+#    - name: loki/statefulset.yaml
+#  wait: yes
+#
+#- name: Scale up microservices loki
+#  when: '{{service.mode == "cluster" and service.cluster.type == "ha"}}'
+#  community.kubernetes.k8s:
+#    definition: "{{ lookup('template', 'item.name') | from_yaml }}"
+#  lookup:
+#    - name: frontend/statefulset.yaml
+#    - name: loki/statefulset.yaml

@@ -1,3 +1,4 @@
+#jinja2:lstrip_blocks: True
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,7 +10,7 @@ metadata:
 data:
   local-config.yaml: >
     auth_enabled: {{multitenancy | lower }}
-    
+
     server:
       http_listen_port: 3100
       http_listen_address: 0.0.0.0
@@ -20,11 +21,11 @@ data:
       grpc_server_max_concurrent_streams: 0
 
     {% if service.mode == "cluster" %}
-    {% if service.ring.type == "memberlist" %}
+    {% if service.cluster.ring.type == "memberlist" %}
     memberlist:
       join_members: 
       {% for num in range(service.cluster.loki.replicas) %}
-      - '{{ansible_operator_meta.name}}-loki-system-{{num}}.{{ansible_operator_meta.name}}-loki-system-headless.{{ansible_operator_meta.namespace}}.svc.cluster.local'
+      - {{ansible_operator_meta.name}}-loki-system-{{num}}.{{ansible_operator_meta.name}}-loki-system-headless.{{ansible_operator_meta.namespace}}.svc.cluster.local
       {% endfor %}
       dead_node_reclaim_time: 30s
       gossip_to_dead_nodes_time: 15s
@@ -51,34 +52,35 @@ data:
       {% if cacheconfig.enabled %}
       results_cache:
         cache:
-          {{cacheconfig.type}}
-
-          {% if cacheconfig.type == "redis" and cacheconfig.redis.external %}
+          {{cacheconfig.type}}:
+          {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
             endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-          {% else %}
+          {% elif cacheconfig.type == "redis" %}
             endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
           {% endif %}
-
-          {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external %}
+          {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
             endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-          {% else %}
+          {% elif cacheconfig.type == "memcache" %}
             endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
           {% endif %}
-
             expiration: {{cacheconfig.expiration}}
       cache_results: true
       {% endif %}
-    
+
     ingester:
       lifecycler:
         join_after: 60s
         observe_period: 5s
         ring:
+          {% if service.mode == "cluster" %}
           replication_factor: {{service.cluster.replication_factor}}
           kvstore:
-            {% if service.ring.type == "memberlist" %}
-            store: memberlist
-            {% endif %}
+            store: {{service.cluster.ring.type}}
+          {% else %}
+          replication_factor: 1
+          kvstore:
+            store: inmemory
+          {% endif %}
         final_sleep: 0s
       chunk_idle_period: 1h
       max_chunk_age: 1h
@@ -92,109 +94,108 @@ data:
       grpc_client_config:
           max_recv_msg_size: 20971520
       remote_timeout: 1s
-    
+
     schema_config:
       configs:
       - from: 2021-04-25
         store: {{schemaconfig.index}}
-        object_store: {{schemaconfig.chunk}}
+        {% if schemaconfig.chunk == "s3" %}
+        object_store: aws
+        {% elif schemaconfig.chunk == "filesystem" %}
+        object_store: filesystem
+        {% endif %}
         schema: v11
         index:
           prefix: index_
           period: 24h
     
+    {% if service.mode == "single" and schemaconfig.index == "boltdb-shipper" %}
+    compactor:
+      working_directory: /loki/compactor
+      {% if storageconfig.boltdb_shipper.shared_store == "s3" %}
+      shared_store: aws
+      {% elif storageconfig.boltdb_shipper.shared_store == "filesystem" %}
+      shared_store: filesystem
+      {% endif %}
+    {% endif %}
+
     storage_config:
-      {% if storageconfig.boltdb_shipper %}
+      {% if storageconfig.boltdb_shipper is defined %}
       boltdb_shipper:
-        {% if schemaconfig.chunk == "s3" %}
+        {% if storageconfig.boltdb_shipper.shared_store == "s3" %}
         shared_store: aws
-        {% if schemaconfig.chunk == "filesystem" %}
+        {% elif storageconfig.boltdb_shipper.shared_store == "filesystem" %}
         shared_store: filesystem
         {% endif %}
         active_index_directory: /loki/index
         cache_location: /loki/boltdb-cache
       {% endif %}
 
-      {% if storageconfig.filesystem %}
+      {% if storageconfig.boltdb_shipper.shared_store == "filesystem" or schemaconfig.chunk == "filesystem" %}
       filesystem:
         directory: {{storageconfig.filesystem.directory}}
       {% endif %}
     
-      {% if storageconfig.s3 %}
+      {% if storageconfig.s3 is defined %}
       aws:
         s3: s3://{{storageconfig.s3.access_key}}:{{storageconfig.s3.secret_key}}@{{storageconfig.s3.address}}/{{storageconfig.s3.bucket}}
         s3forcepathstyle: true
         insecure: true
       {% endif %}
-    
       {% if cacheconfig.enabled %}
       index_queries_cache_config:
-      {{cacheconfig.type}}
-
-      {% if cacheconfig.type == "redis" and cacheconfig.redis.external %}
-        endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-      {% else %}
-        endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
-      {% endif %}
-
-      {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external %}
-        endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-      {% else %}
-        endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
-      {% endif %}
+        {{cacheconfig.type}}:
+        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
+          endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
+        {% elif cacheconfig.type == "redis" %}
+          endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
+        {% endif %}
+        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
+          endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
+        {% elif cacheconfig.type == "memcache" %}
+          endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
+        {% endif %}
           expiration: {{cacheconfig.expiration}}
       {% endif %}
-    
+
     {% if cacheconfig.enabled %}
     chunk_store_config:
       chunk_cache_config:
-        {{cacheconfig.type}}
-
-        {% if cacheconfig.type == "redis" and cacheconfig.redis.external %}
+        {{cacheconfig.type}}:
+        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
           endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-        {% else %}
+        {% elif cacheconfig.type == "redis" %}
           endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
         {% endif %}
-
-        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external %}
+        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
           endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-        {% else %}
+        {% elif cacheconfig.type == "memcache" %}
           endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
         {% endif %}
-            expiration: {{cacheconfig.expiration}}
+          expiration: {{cacheconfig.expiration}}
       max_look_back_period: 0    
       write_dedupe_cache_config:
-        {{cacheconfig.type}}
-
-        {% if cacheconfig.type == "redis" and cacheconfig.redis.external %}
+        {{cacheconfig.type}}:
+        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
           endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-        {% else %}
+        {% elif cacheconfig.type == "redis" %}
           endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
         {% endif %}
-
-        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external %}
+        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
           endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-        {% else %}
+        {% elif cacheconfig.type == "memcache" %}
           endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
         {% endif %}
-            expiration: {{cacheconfig.expiration}
+          expiration: {{cacheconfig.expiration}}
     {% endif %}
-    
-    limits_config:
-      enforce_metric_name: false
-      reject_old_samples: true
-      reject_old_samples_max_age: 168h
-      ingestion_rate_mb: 64
-      ingestion_burst_size_mb: 128
-      max_entries_limit_per_query: 50000
-    
+
     {% if ruler.enabled %}
     ruler:
       storage:
         type: {{ruler.storage}}
         {% if ruler.storage == "s3" %}
         s3:
-          s3: s3://{{storageconfig.s3.access_key}}:{{storageconfig.s3.secret_key}}@{{storageconfig.s3.address}}/{{ruler.storage.s3.bucket}}
+          s3: s3://{{storageconfig.s3.access_key}}:{{storageconfig.s3.secret_key}}@{{storageconfig.s3.address}}/{{ruler.s3.bucket}}
           s3forcepathstyle: true
           insecure: true
           http_config:
@@ -205,19 +206,31 @@ data:
       alertmanager_url: "{{ruler.alertmanager}}"
       ring:
         kvstore:
+          {% if service.mode == "cluster" and ruler.ring is defined %}
           store: {{ruler.ring}}
+          {% else %}
+          store: inmemory
+          {% endif %}
     {% endif %}
+  
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      ingestion_rate_mb: 64
+      ingestion_burst_size_mb: 128
+      max_entries_limit_per_query: 50000
     
     table_manager:
-        chunk_tables_provisioning:
-            inactive_read_throughput: 0
-            inactive_write_throughput: 0
-            provisioned_read_throughput: 0
-            provisioned_write_throughput: 0
-        index_tables_provisioning:
-            inactive_read_throughput: 0
-            inactive_write_throughput: 0
-            provisioned_read_throughput: 0
-            provisioned_write_throughput: 0
-        retention_deletes_enabled: false
-        retention_period: 0
+      chunk_tables_provisioning:
+        inactive_read_throughput: 0
+        inactive_write_throughput: 0
+        provisioned_read_throughput: 0
+        provisioned_write_throughput: 0
+      index_tables_provisioning:
+        inactive_read_throughput: 0
+        inactive_write_throughput: 0
+        provisioned_read_throughput: 0
+        provisioned_write_throughput: 0
+      retention_deletes_enabled: false
+      retention_period: 0

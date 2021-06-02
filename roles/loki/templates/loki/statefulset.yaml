@@ -1,3 +1,4 @@
+#jinja2:lstrip_blocks: True
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -7,9 +8,9 @@ metadata:
      plugins.cloudminds.com/loki: loki-system
      app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
 spec:
-  {% if service.cluster.mode == "cluster" %}
+  {% if service.mode == "cluster" and service.cluster.type == "ha" %}
   replicas: {{ service.cluster.loki.replicas }}
-  {% elif service.cluster.mode == "single" %}
+  {% else %}
   replicas: 1
   {% endif %}
   serviceName:  '{{ansible_operator_meta.name}}-loki-system-headless'
@@ -49,7 +50,7 @@ spec:
         - containerPort: 9095
           name: grpc-9095
           protocol: TCP
-        {% if service.cluster.mode == "cluster" and service.cluster.ring.type == "memberlist" %}
+        {% if service.mode == "cluster" and service.cluster.ring.type == "memberlist" %}
         - containerPort: 7946
           name: tcp-7946
           protocol: TCP

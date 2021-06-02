@@ -1,30 +1,31 @@
-- name: Loki Operator | Cache | PersistentVolumeClaims 
+- name: Loki Operator | Reids Cache | PersistentVolumeClaims 
   community.kubernetes.k8s:
     state: '{{"present" if cacheconfig.enabled else "absent"}}'
     definition: "{{ lookup('template', 'redis/pvc.yaml') | from_yaml }}"
 
-- name: Loki Operator | Cache | ConfigMap 
+- name: Loki Operator | Reids Cache | ConfigMap
   community.kubernetes.k8s:
     state: '{{"present" if cacheconfig.enabled else "absent"}}'
     definition: "{{ lookup('template', 'redis/configmap.yaml') | from_yaml }}"
-    
-- name: Loki Operator | Cache | StatefulSet 
+
+- name: Loki Operator | Reids Cache | StatefulSet
   community.kubernetes.k8s:
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
     definition: "{{ lookup('template', 'redis/statefulset.yaml') | from_yaml }}"
-    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    force: yes
 
-- name: Loki Operator | Cache | Services 
+- name: Loki Operator | Reids Cache | Service
   community.kubernetes.k8s:
-    definition: "{{ lookup('template', 'redis/service.yaml') | from_yaml }}"
     state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    definition: "{{ lookup('template', 'redis/service.yaml') | from_yaml }}"
 
-- name: Loki Operator | Cache | Metrics
+- name: Loki Operator | Redis Cache | Metrics
   community.kubernetes.k8s:
     definition: "{{ lookup('template', 'redis/metrics.yaml') | from_yaml }}"
-    state: '{{"present" if servicemonitor and servicemonitor else "absent"}}'
+    state: '{{"present" if cacheconfig.enabled else "absent"}}'
       
-- name: Loki Operator | Cache | ServicesMonitor 
+- name: Loki Operator | Redis Cache | ServicesMonitor 
   ignore_errors: yes
   community.kubernetes.k8s:
     definition: "{{ lookup('template', 'redis/servicemonitor.yaml') | from_yaml }}"
-    state: '{{"present" if servicemonitor and servicemonitor else "absent"}}'
+    state: '{{"present" if cacheconfig.enabled and servicemonitor else "absent"}}'
