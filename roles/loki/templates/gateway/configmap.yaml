@@ -17,7 +17,7 @@ data:
     }
     http {
       client_max_body_size 1024M;
-      resolver kube-dns.kube-system.svc.cluster.local;
+      resolver kube-dns.kube-system.svc.cluster.local valid=30s;
       default_type application/octet-stream;
       access_log   /dev/stdout;
       sendfile     on;

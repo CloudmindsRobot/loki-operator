@@ -8,6 +8,11 @@
     state: '{{"present" if service.mode == "single" or service.cluster.type == "ha" else "absent"}}'
     definition: "{{ lookup('template', 'loki/service.yaml') | from_yaml }}"
 
+- name: Loki Operator | Loki | Service Headless
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "single" or service.cluster.type == "ha" else "absent"}}'
+    definition: "{{ lookup('template', 'loki/headless.yaml') | from_yaml }}"
+
 - name: Loki Operator | Loki | ServiceMonitor
   community.kubernetes.k8s:
     state: '{{"present" if servicemonitor else "absent"}}'

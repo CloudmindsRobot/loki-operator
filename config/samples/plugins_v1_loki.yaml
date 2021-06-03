@@ -12,7 +12,7 @@ spec:
   servicemonitor: true
   service: 
   #mode: single,cluster
-    mode: single
+    mode: cluster
     single:
       loki:
         image: harbor.cloudminds.com/gemscloud/loki
