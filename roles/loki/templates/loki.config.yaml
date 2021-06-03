@@ -21,7 +21,7 @@ data:
       grpc_server_max_concurrent_streams: 0
 
     {% if service.mode == "cluster" %}
-    {% if service.cluster.ring.type == "memberlist" %}
+      {% if service.cluster.ring.type == "memberlist" %}
     memberlist:
       join_members: 
       {% for num in range(service.cluster.loki.replicas) %}
@@ -32,7 +32,7 @@ data:
       left_ingesters_timeout: 30s
       bind_addr: ['0.0.0.0']
       bind_port: 7946
-    {% endif %}
+      {% endif %}
     {% endif %}
 
     querier:
@@ -53,17 +53,22 @@ data:
       results_cache:
         cache:
           {{cacheconfig.type}}:
-          {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
+            {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
             endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-          {% elif cacheconfig.type == "redis" %}
+            {% elif cacheconfig.type == "redis" %}
             endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
-          {% endif %}
-          {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
-            endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-          {% elif cacheconfig.type == "memcache" %}
-            endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
-          {% endif %}
+            {% endif %}
             expiration: {{cacheconfig.expiration}}
+          {% if cacheconfig.type == "memcached" %}
+          memcached_client:
+            {% if cacheconfig.memcached.external is defined %}
+            host: {{cacheconfig.memcached.external.address}}
+            service: memcached
+            {% else %}
+            host: {{ansible_operator_meta.name}}-memcached.{{ansible_operator_meta.namespace}}.svc.cluster.local
+            service: memcached
+            {% endif %}
+          {% endif %}
       cache_results: true
       {% endif %}
 
@@ -145,48 +150,63 @@ data:
       {% if cacheconfig.enabled %}
       index_queries_cache_config:
         {{cacheconfig.type}}:
-        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
+          {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
           endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-        {% elif cacheconfig.type == "redis" %}
+          {% elif cacheconfig.type == "redis" %}
           endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
-        {% endif %}
-        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
-          endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-        {% elif cacheconfig.type == "memcache" %}
-          endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
-        {% endif %}
+          {% endif %}
           expiration: {{cacheconfig.expiration}}
+        {% if cacheconfig.type == "memcached" %}
+        memcached_client:
+          {% if cacheconfig.memcached.external is defined %}
+          host: {{cacheconfig.memcached.external.address}}
+          service: memcached
+          {% else %}
+          host: {{ansible_operator_meta.name}}-memcached.{{ansible_operator_meta.namespace}}.svc.cluster.local
+          service: memcached
+          {% endif %}
+        {% endif %}
       {% endif %}
 
     {% if cacheconfig.enabled %}
     chunk_store_config:
       chunk_cache_config:
         {{cacheconfig.type}}:
-        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
+          {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
           endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-        {% elif cacheconfig.type == "redis" %}
+          {% elif cacheconfig.type == "redis" %}
           endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
-        {% endif %}
-        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
-          endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-        {% elif cacheconfig.type == "memcache" %}
-          endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
-        {% endif %}
+          {% endif %}
           expiration: {{cacheconfig.expiration}}
+        {% if cacheconfig.type == "memcached" %}
+        memcached_client:
+          {% if cacheconfig.memcached.external is defined %}
+          host: {{cacheconfig.memcached.external.address}}
+          service: memcached
+          {% else %}
+          host: {{ansible_operator_meta.name}}-memcached.{{ansible_operator_meta.namespace}}.svc.cluster.local
+          service: memcached
+          {% endif %}
+        {% endif %}
       max_look_back_period: 0    
       write_dedupe_cache_config:
         {{cacheconfig.type}}:
-        {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
+          {% if cacheconfig.type == "redis" and cacheconfig.redis.external is defined %}
           endpoint: {{cacheconfig.redis.external.address}}:{{cacheconfig.redis.external.port}}
-        {% elif cacheconfig.type == "redis" %}
+          {% elif cacheconfig.type == "redis" %}
           endpoint: {{ansible_operator_meta.name}}-redis-0.{{ansible_operator_meta.name}}-redis.{{ansible_operator_meta.namespace}}.svc.cluster.local:6379
-        {% endif %}
-        {% if cacheconfig.type == "memcache" and cacheconfig.memcache.external is defined %}
-          endpoint: {{cacheconfig.memcache.external.address}}:{{cacheconfig.memcache.external.port}}
-        {% elif cacheconfig.type == "memcache" %}
-          endpoint: {{ansible_operator_meta.name}}-memcache-0.{{ansible_operator_meta.name}}-memcache.{{ansible_operator_meta.namespace}}.svc.cluster.local:11211
-        {% endif %}
+          {% endif %}
           expiration: {{cacheconfig.expiration}}
+          {% if cacheconfig.type == "memcached" %}
+        memcached_client:
+          {% if cacheconfig.memcached.external is defined %}
+          host: {{cacheconfig.memcached.external.address}}
+          service: memcached
+          {% else %}
+          host: {{ansible_operator_meta.name}}-memcached.{{ansible_operator_meta.namespace}}.svc.cluster.local
+          service: memcached
+          {% endif %}
+        {% endif %}
     {% endif %}
 
     {% if ruler.enabled %}

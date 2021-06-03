@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: '{{ansible_operator_meta.name}}'-memcached-metrics
+  name: '{{ansible_operator_meta.name}}-memcached'
   namespace: '{{ansible_operator_meta.namespace}}'
   labels:
     plugins.cloudminds.com/loki: loki-memcached
@@ -13,7 +13,7 @@ spec:
       plugins.cloudminds.com/loki: loki-memcached
       app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
   replicas: 1
-  serviceName: '{{ansible_operator_meta.name}}'-memcached
+  serviceName: '{{ansible_operator_meta.name}}-memcached'
   template:
     metadata:
       labels:
@@ -49,17 +49,17 @@ spec:
             - /run.sh
             - -e/cache-state/memory_file
           ports:
-            - name: memcache
+            - name: memcached
               containerPort: 11211
           livenessProbe:
             tcpSocket:
-              port: memcache
+              port: memcached
             initialDelaySeconds: 30
             timeoutSeconds: 5
             failureThreshold: 6
           readinessProbe:
             tcpSocket:
-              port: memcache
+              port: memcached
             initialDelaySeconds: 5
             timeoutSeconds: 3
             periodSeconds: 5

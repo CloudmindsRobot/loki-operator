@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: '{{ansible_operator_meta.name}}'-memcached-metrics
+  name: '{{ansible_operator_meta.name}}-memcached-metrics'
   namespace: '{{ansible_operator_meta.namespace}}'
   labels:
     plugins.cloudminds.com/loki: loki-memcached

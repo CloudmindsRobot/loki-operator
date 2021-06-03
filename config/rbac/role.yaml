@@ -24,6 +24,7 @@ rules:
     - endpoints
     - secrets
     - configmaps
+    - serviceaccounts
     - daemonsets
     - deployments
     - deployments/scale

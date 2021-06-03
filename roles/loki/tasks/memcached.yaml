@@ -1,25 +1,26 @@
 - name: Loki Operator | Memcached | ServiceAccount
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "memcached" else "absent"}}'
     definition: "{{ lookup('template', 'memcached/serviceaccount.yaml') | from_yaml }}"
 
 - name: Loki Operator | Memcached | StatefulSet
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "memcached" else "absent"}}'
     definition: "{{ lookup('template', 'memcached/statefulset.yaml') | from_yaml }}"
 
 - name: Loki Operator | Memcached | Service
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled else "absent"}}'
+    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "memcached" else "absent"}}'
     definition: "{{ lookup('template', 'memcached/service.yaml') | from_yaml }}"
 
 - name: Loki Operator | Memcached | Metrics
   community.kubernetes.k8s:
+    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "memcached" and servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'memcached/metrics.yaml') | from_yaml }}"
-    state: '{{"present" if cacheconfig.enabled and servicemonitor else "absent"}}'
       
 - name: Loki Operator | Memcached | ServicesMonitor 
   ignore_errors: yes
   community.kubernetes.k8s:
+    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "memcached" and servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'memacached/servicemonitor.yaml') | from_yaml }}"
-    state: '{{"present" if cacheconfig.enabled and servicemonitor else "absent"}}'
+      

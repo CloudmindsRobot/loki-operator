@@ -9,7 +9,7 @@ spec:
   grafana: 
     enabled: true
   multitenancy: true
-  servicemonitor: false
+  servicemonitor: true
   service: 
   #mode: single,cluster
     mode: single
@@ -52,9 +52,9 @@ spec:
       #    image: harbor.cloudminds.com/gemscloud/loki
       #    replicas: 2
   cacheconfig: 
-    enabled: true
+    enabled: false
     expiration: 1h
-    type: redis
+    type: memcached
     redis:
       image: harbor.cloudminds.com/gemscloud/redis
       tag: 5.0.6
