@@ -1,0 +1,14 @@
+- name: Loki Operator | Gateway | ConfigMap
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" else "absent"}}'
+    definition: "{{ lookup('template', 'gateway/configmap.yaml') | from_yaml }}"
+
+- name: Loki Operator | Gateway | Deployment
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" else "absent"}}'
+    definition: "{{ lookup('template', 'gateway/deployment.yaml') | from_yaml }}"
+
+- name: Loki Operator | Gateway | Service
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" else "absent"}}'
+    definition: "{{ lookup('template', 'gateway/service.yaml') | from_yaml }}"

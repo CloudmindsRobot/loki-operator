@@ -1,0 +1,14 @@
+- name: Loki Operator | Frontend | StatefulSet
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" else "absent"}}'
+    definition: "{{ lookup('template', 'frontend/statefulset.yaml') | from_yaml }}"
+
+- name: Loki Operator | Frontend | Service
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" else "absent"}}'
+    definition: "{{ lookup('template', 'frontend/service.yaml') | from_yaml }}"
+
+- name: Loki Operator | Frontend | ServiceMonitor
+  community.kubernetes.k8s:
+    state: '{{"present" if service.mode == "cluster" and servicemonitor else "absent"}}'
+    definition: "{{ lookup('template', 'frontend/servicemonitor.yaml') | from_yaml }}"

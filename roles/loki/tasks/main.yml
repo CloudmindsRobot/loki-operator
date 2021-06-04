@@ -1,0 +1,29 @@
+---
+# tasks file for Loki
+- include_tasks: redis.yaml
+
+- include_tasks: memcached.yaml
+
+- include_tasks: loki-frontend.yaml
+  when: '{{service.mode == "cluster"}}'
+
+- include_tasks: loki-gateway.yaml
+  when: '{{service.mode == "cluster"}}'
+
+- include_tasks: loki-system.yaml
+  when: '{{service.mode == "single" or service.cluster.type == "ha"}}'
+
+- name: Loki Operator | Loki | ConfigMap
+  community.kubernetes.k8s:
+    definition: "{{ lookup('template', 'loki.config.yaml') | from_yaml }}"
+    force: yes
+    merge_type: json
+  notify:
+    - Scale down single loki 
+    - Scale up single loki 
+    - Scale down ha loki frontend
+    - Scale down ha loki system
+    - Scale up ha loki system
+    - Scale up ha loki frontend
+    #- Scale down microservices loki
+    #- Scale up microservices loki

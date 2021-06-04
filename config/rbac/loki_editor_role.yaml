@@ -1,0 +1,24 @@
+# permissions for end users to edit lokis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loki-editor-role
+rules:
+- apiGroups:
+  - plugins.cloudminds.com
+  resources:
+  - lokis
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - plugins.cloudminds.com
+  resources:
+  - lokis/status
+  verbs:
+  - get

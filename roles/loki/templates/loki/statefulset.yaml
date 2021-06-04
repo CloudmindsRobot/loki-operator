@@ -1,0 +1,103 @@
+#jinja2:lstrip_blocks: True
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ansible_operator_meta.name}}-loki-system'
+  namespace: '{{ansible_operator_meta.namespace}}'
+  labels:
+     plugins.cloudminds.com/loki: loki-system
+     app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
+spec:
+  {% if service.mode == "cluster" and service.cluster.type == "ha" %}
+  replicas: {{ service.cluster.loki.replicas }}
+  {% else %}
+  replicas: 1
+  {% endif %}
+  serviceName:  '{{ansible_operator_meta.name}}-loki-system-headless'
+  selector:
+    matchLabels:
+       plugins.cloudminds.com/loki: loki-system
+       app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
+  template:
+    metadata:
+      labels:
+         plugins.cloudminds.com/loki: loki-system
+         app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
+    spec:
+      affinity:
+        podAffinity:
+
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    plugins.cloudminds.com/loki: loki-system
+                    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
+                namespaces:
+                  - '{{ansible_operator_meta.namespace}}'
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+      containers:
+      - name: loki-system
+        image: '{{service.cluster.loki.image}}:{{version}}'
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3100
+          name: http-3100
+          protocol: TCP
+        - containerPort: 9095
+          name: grpc-9095
+          protocol: TCP
+        {% if service.mode == "cluster" and service.cluster.ring.type == "memberlist" %}
+        - containerPort: 7946
+          name: tcp-7946
+          protocol: TCP
+        {% endif %}
+        resources:
+          limits:
+            cpu: "8"
+            memory: 24Gi
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+        volumeMounts:
+        - name: loki-config
+          mountPath: /etc/loki/
+          readOnly: true
+        - name: data
+          mountPath: /loki/
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 3100
+          timeoutSeconds: 5
+        securityContext:
+          capabilities:
+            add: []
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+      securityContext:
+        fsGroup: 100
+      volumes:
+      - name: loki-config
+        configMap:
+          name: '{{ansible_operator_meta.name}}-loki-conf'
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        plugins.cloudminds.com/loki: loki-system
+        app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: "100Gi"

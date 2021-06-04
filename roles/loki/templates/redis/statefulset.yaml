@@ -1,0 +1,88 @@
+#jinja2:lstrip_blocks: True
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  labels:
+    plugins.cloudminds.com/loki: loki-redis
+    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+  name: '{{ ansible_operator_meta.name }}-redis'
+  namespace: '{{ ansible_operator_meta.namespace }}'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      plugins.cloudminds.com/loki: loki-redis
+      app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+  serviceName: '{{ ansible_operator_meta.name }}-redis'
+  template:
+    metadata:
+      labels:
+        plugins.cloudminds.com/loki: loki-redis
+        app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-redis'
+    spec:
+      containers:
+      - name: redis
+        image: '{{cacheconfig.redis.image}}:{{cacheconfig.redis.tag}}'
+        imagePullPolicy: IfNotPresent
+        args: ["/etc/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: tcp-6379
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 8Gi
+          requests:
+            cpu: 200m
+            memory: 4Gi
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis.conf
+          subPath: redis.conf
+          readOnly: true
+        - name: data
+          mountPath: /var/lib/redis
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 6379
+          timeoutSeconds: 5
+        securityContext:
+          capabilities:
+            add: []
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+      {% if cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor %}
+      - name: redis-exporter
+        image: oliver006/redis_exporter:v1.23.1-alpine
+        imagePullPolicy: IfNotPresent
+        args:
+          - -redis.addr=127.0.0.1:6379
+        ports:
+          - containerPort: 9121
+            name: metrics
+            protocol: TCP
+        resources:
+          limits:
+            cpu: "50m"
+            memory: 32Mi 
+          requests:
+            cpu: 10m
+            memory: 16Mi
+      {% endif %}
+      securityContext:
+        fsGroup: 100
+      volumes:
+      - name: redis-config
+        configMap:
+          name: '{{ ansible_operator_meta.name }}-redis-conf'
+      - persistentVolumeClaim:
+          claimName: '{{ ansible_operator_meta.name }}-redis-data'
+        name: data

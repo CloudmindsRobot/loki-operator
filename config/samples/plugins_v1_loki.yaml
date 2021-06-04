@@ -1,0 +1,97 @@
+apiVersion: plugins.cloudminds.com/v1
+kind: Loki
+metadata:
+  name: loki
+  annotations:
+    ansible.operator-sdk/reconcile-period: "30s"
+spec:
+  version: 2.2.1
+  grafana: 
+    enabled: true
+  multitenancy: true
+  servicemonitor: true
+  service: 
+  #mode: single,cluster
+    mode: cluster
+    single:
+      loki:
+        image: grafana/loki
+    cluster:
+      #type: ha, microservices
+      type: ha
+      replication_factor: 2
+      ring:
+        #memberlist, consul
+        type: memberlist
+        #consul:
+        #  deploy: true
+      gateway:
+        image: nginx
+        tag: 1.15.1-alpine
+        replicas: 2
+      frontend:
+        image: grafana/loki
+        replicas: 2 
+      loki:
+        image: grafana/loki
+        replicas: 3
+      #microservices:
+      #  ingester:
+      #    image: grafana/loki
+      #    replicas: 3
+      #  distributor:
+      #    image: grafana/loki
+      #    replicas: 3
+      #  querier:
+      #    image: grafana/loki
+      #    replicas: 3
+      #  ruler:
+      #    image: grafana/loki
+      #    replicas: 2
+      #  table-manager:
+      #    image: grafana/loki
+      #    replicas: 2
+  cacheconfig: 
+    enabled: false
+    expiration: 1h
+    type: memcached
+    redis:
+      image: redis
+      tag: 5.0.6
+      #external:
+      #  address: xxxx
+      #  port: 6379
+    memcached:
+      image: docker.io/bitnami/memcached
+      tag: 1.6.9-debian-10-r114
+      #external:
+      #  address: xxxx
+      #  port: 11211
+
+  ruler:
+    enabled: true
+    ring: memberlist
+    alertmanager: http://xxxxxxx
+    storage: s3
+    s3:
+      bucket: loki-ruler-operator
+
+  schemaconfig:
+    #index： boltdb-shipper, cassandra
+    index: boltdb-shipper
+    #chunk： filesystem, s3
+    chunk: s3
+
+  storageconfig:
+    boltdb_shipper:
+      #shared_store: s3, filesystem
+      shared_store: s3
+
+    filesystem:
+      directory: /loki/chunks
+
+    s3:
+      address: 10.51.201.22
+      secret_key: xPfIfXBjqMnt62dZA9c2wXXCmLVPaMUOmMBt3M6H
+      access_key: 5373OR9D1ZA5UD6FWE6O
+      bucket: loki-operator

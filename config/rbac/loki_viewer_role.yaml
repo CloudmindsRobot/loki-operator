@@ -1,0 +1,20 @@
+# permissions for end users to view lokis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loki-viewer-role
+rules:
+- apiGroups:
+  - plugins.cloudminds.com
+  resources:
+  - lokis
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - plugins.cloudminds.com
+  resources:
+  - lokis/status
+  verbs:
+  - get

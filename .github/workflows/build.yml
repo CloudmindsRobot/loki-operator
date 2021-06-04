@@ -1,0 +1,64 @@
+name: Docker
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+env:
+  PLATFORMS: linux/amd64
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.3
+
+      - name: Repo metadata
+        id: repo
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const repo = await github.repos.get(context.repo)
+            return repo.data
+      - name: Prepare
+        id: prepare
+        run: |
+          VERSION=latest
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [[ $GITHUB_REF == refs/heads/* ]]; then
+            VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
+            if [ "${{ github.event.repository.default_branch }}" = "$VERSION" ]; then
+              VERSION=latest
+            fi
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            VERSION=pr-${{ github.event.number }}
+          fi
+          TAGS="${VERSION}"
+          echo ::set-output name=version::${VERSION}
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Quay.io
+        if: ${{ github.event_name }} != 'pull_request'
+        uses: docker/login-action@v1.6.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUARIO_USERNAME }}
+          password: ${{ secrets.QUARIO_PASSWORD }}
+      - name: Build image and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: quay.io/cloudminds/loki-operator:${{ steps.prepare.outputs.tags }}

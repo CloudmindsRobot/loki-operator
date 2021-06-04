@@ -1,0 +1,117 @@
+#jinja2:lstrip_blocks: True
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ansible_operator_meta.name}}-memcached'
+  namespace: '{{ansible_operator_meta.namespace}}'
+  labels:
+    plugins.cloudminds.com/loki: loki-memcached
+    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
+spec:
+  selector:
+    matchLabels:
+      plugins.cloudminds.com/loki: loki-memcached
+      app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
+  replicas: 1
+  serviceName: '{{ansible_operator_meta.name}}-memcached'
+  template:
+    metadata:
+      labels:
+        plugins.cloudminds.com/loki: loki-memcached
+        app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
+    spec:
+      affinity:
+        podAffinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    plugins.cloudminds.com/loki: loki-memcached
+                    app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
+                namespaces:
+                  - '{{ansible_operator_meta.namespace}}'
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      containers:
+        - name: memcached
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "/usr/bin/pkill -10 memcached ; sleep 60s"]
+          image: '{{cacheconfig.memcached.image}}:{{cacheconfig.memcached.tag}}'
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - /run.sh
+            - -e/cache-state/memory_file
+          ports:
+            - name: memcached
+              containerPort: 11211
+          livenessProbe:
+            tcpSocket:
+              port: memcached
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            tcpSocket:
+              port: memcached
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            periodSeconds: 5
+          resources:
+            limits: 
+              cpu: "1"
+              memory: 8Gi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - name: data
+              mountPath: /cache-state
+            - name: tmp
+              mountPath: /tmp
+        {% if cacheconfig.enabled and cacheconfig.type == "memcached" %}
+        - name: metrics
+          image: docker.io/bitnami/memcached-exporter:0.8.0-debian-10-r105
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - name: metrics
+              containerPort: 9150
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          resources:
+            limits: {}
+            requests: {}
+        {% endif %}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          plugins.cloudminds.com/loki: loki-memcached
+          app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-memcached'
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "10Gi"
