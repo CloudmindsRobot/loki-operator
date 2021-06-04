@@ -29,14 +29,14 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # cloudminds.com/loki-operator-bundle:$VERSION and cloudminds.com/loki-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= cloudminds.com/loki-operator
+IMAGE_TAG_BASE ?= quay.io/cloudminds/loki-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= $(IMAGE_TAG_BASE):latest
 
 all: docker-build
 

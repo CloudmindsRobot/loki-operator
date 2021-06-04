@@ -61,7 +61,7 @@ spec:
           runAsUser: 1001
       {% if cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor %}
       - name: redis-exporter
-        image: harbor.cloudminds.com/gemscloud/redis_exporter:v1.0.3
+        image: oliver006/redis_exporter:v1.23.1-alpine
         imagePullPolicy: IfNotPresent
         args:
           - -redis.addr=127.0.0.1:6379

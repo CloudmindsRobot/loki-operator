@@ -38,7 +38,7 @@ spec:
               weight: 1
         nodeAffinity:
       containers:
-      - image: harbor.cloudminds.com/gemscloud/nginx:1.15.1-alpine
+      - image: '{{service.cluster.gateway.image}}:{{service.cluster.gateway.tag}}'
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

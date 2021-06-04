@@ -15,7 +15,7 @@ spec:
     mode: cluster
     single:
       loki:
-        image: harbor.cloudminds.com/gemscloud/loki
+        image: grafana/loki
     cluster:
       #type: ha, microservices
       type: ha
@@ -26,37 +26,37 @@ spec:
         #consul:
         #  deploy: true
       gateway:
-        image: harbor.cloudminds.com/gemscloud/nginx
+        image: nginx
         tag: 1.15.1-alpine
         replicas: 2
       frontend:
-        image: harbor.cloudminds.com/gemscloud/loki
+        image: grafana/loki
         replicas: 2 
       loki:
-        image: harbor.cloudminds.com/gemscloud/loki
+        image: grafana/loki
         replicas: 3
       #microservices:
       #  ingester:
-      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    image: grafana/loki
       #    replicas: 3
       #  distributor:
-      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    image: grafana/loki
       #    replicas: 3
       #  querier:
-      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    image: grafana/loki
       #    replicas: 3
       #  ruler:
-      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    image: grafana/loki
       #    replicas: 2
       #  table-manager:
-      #    image: harbor.cloudminds.com/gemscloud/loki
+      #    image: grafana/loki
       #    replicas: 2
   cacheconfig: 
     enabled: false
     expiration: 1h
     type: memcached
     redis:
-      image: harbor.cloudminds.com/gemscloud/redis
+      image: redis
       tag: 5.0.6
       #external:
       #  address: xxxx
