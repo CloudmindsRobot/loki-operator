@@ -8,8 +8,10 @@ metadata:
      plugins.cloudminds.com/loki: loki-system
      app.kubernetes.io/name: '{{ ansible_operator_meta.name }}-loki-system'
 spec:
-  {% if service.mode == "cluster" and service.cluster.type == "ha" %}
+  {% if service.mode == "cluster" %}
+  {% if service.cluster.type == "ha" %}
   replicas: {{ service.cluster.loki.replicas }}
+  {% endif %}
   {% else %}
   replicas: 1
   {% endif %}
@@ -41,7 +43,11 @@ spec:
         nodeAffinity:
       containers:
       - name: loki-system
-        image: '{{service.cluster.loki.image}}:{{version}}'
+        {% if service.mode == "cluster" %}
+        image: '{{service.cluster.loki.image | default('grafana/loki')}}:{{version | default('2.2.1')}}'
+        {% elif service.mode == "single" %}
+        image: '{{service.single.loki.image | default('grafana/loki')}}:{{version | default('2.2.1')}}'
+        {% endif %}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3100
@@ -50,10 +56,12 @@ spec:
         - containerPort: 9095
           name: grpc-9095
           protocol: TCP
-        {% if service.mode == "cluster" and service.cluster.ring.type == "memberlist" %}
+        {% if service.mode == "cluster" %}
+        {% if service.cluster.ring.type == "memberlist" %}
         - containerPort: 7946
           name: tcp-7946
           protocol: TCP
+        {% endif %}
         {% endif %}
         resources:
           limits:

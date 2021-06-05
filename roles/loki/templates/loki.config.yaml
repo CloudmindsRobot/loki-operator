@@ -49,6 +49,7 @@ data:
       split_queries_by_interval: 24h
       align_queries_with_step: true
       max_retries: 5
+      {% if cacheconfig is defined %}
       {% if cacheconfig.enabled %}
       results_cache:
         cache:
@@ -70,6 +71,7 @@ data:
             {% endif %}
           {% endif %}
       cache_results: true
+      {% endif %}
       {% endif %}
 
     ingester:
@@ -147,6 +149,7 @@ data:
         s3forcepathstyle: true
         insecure: true
       {% endif %}
+      {% if cacheconfig is defined %}
       {% if cacheconfig.enabled %}
       index_queries_cache_config:
         {{cacheconfig.type}}:
@@ -167,7 +170,9 @@ data:
           {% endif %}
         {% endif %}
       {% endif %}
+      {% endif %}
 
+    {% if cacheconfig is defined %}
     {% if cacheconfig.enabled %}
     chunk_store_config:
       chunk_cache_config:
@@ -208,7 +213,9 @@ data:
           {% endif %}
         {% endif %}
     {% endif %}
-
+    {% endif %}
+  
+    {% if ruler is defined %}
     {% if ruler.enabled %}
     ruler:
       storage:
@@ -231,6 +238,7 @@ data:
           {% else %}
           store: inmemory
           {% endif %}
+    {% endif %}
     {% endif %}
   
     limits_config:
