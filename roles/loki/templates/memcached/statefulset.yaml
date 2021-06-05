@@ -43,7 +43,7 @@ spec:
             preStop:
               exec:
                 command: ["/bin/sh", "-c", "/usr/bin/pkill -10 memcached ; sleep 60s"]
-          image: '{{cacheconfig.memcached.image}}:{{cacheconfig.memcached.tag}}'
+          image: '{{cacheconfig.memcached.image | default('docker.io/bitnami/memcached')}}:{{cacheconfig.memcached.tag | default('1.6.9-debian-10-r114')}}'
           imagePullPolicy: "IfNotPresent"
           args:
             - /run.sh
@@ -77,7 +77,7 @@ spec:
               mountPath: /cache-state
             - name: tmp
               mountPath: /tmp
-        {% if cacheconfig.enabled and cacheconfig.type == "memcached" %}
+        {% if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "memcached" and servicemonitor %}
         - name: metrics
           image: docker.io/bitnami/memcached-exporter:0.8.0-debian-10-r105
           imagePullPolicy: "IfNotPresent"

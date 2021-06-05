@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: '{{cacheconfig.redis.image}}:{{cacheconfig.redis.tag}}'
+        image: '{{cacheconfig.redis.image | default('redis')}}:{{cacheconfig.redis.tag | default('5.0.6')}}'
         imagePullPolicy: IfNotPresent
         args: ["/etc/redis.conf"]
         ports:
@@ -59,7 +59,7 @@ spec:
           readOnlyRootFilesystem: false
           runAsNonRoot: true
           runAsUser: 1001
-      {% if cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor %}
+      {% if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor %}
       - name: redis-exporter
         image: oliver006/redis_exporter:v1.23.1-alpine
         imagePullPolicy: IfNotPresent

@@ -17,3 +17,4 @@
   community.kubernetes.k8s:
     state: '{{"present" if servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'loki/servicemonitor.yaml') | from_yaml }}"
+  when: '{{servicemonitor is defined}}'

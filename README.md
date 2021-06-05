@@ -4,39 +4,39 @@ Loki Operator是基于[Operator-SDK](https://github.com/operator-framework/opera
 
 Loki Operator完整的实现Loki在kubernetes环境下的生命周期和配置管理，适合在云原生场景多租户模式下的部署与管理。
 
-> !!! Loki Operator还未经过大规模测试，目前还不建议直接用于生产环境.
+> 🔔🔔🔔 Loki Operator还未经过大规模测试，目前还不建议直接用于生产环境.
 
-最后，感谢Operator-SDK️项目 ❤️  ❤️
+最后，感谢Operator-SDK️项目 🌈
 
 ## Supported System
 
 Kubernetes: 1.18+
 
 ## Features
-- [x] 支持Loki自动化部署
-  - [x] 单实例模式
-  - [x] 集群 / HA模式
+- [x] Loki Architecture
+  - [x] Single Node
+  - [x] Cluster / HA [ 🔔 What is Loki Ha mode](https://github.com/grafana/loki/tree/main/production/docker)
     - [x] Loki
     - [x] Loki Frontent
     - [x] Loki Gateway
-  - [ ] 集群 / 微服务模式
+  - [ ] Cluster / MicroService
 - [x] Ring
   - [x] Memberlist
   - [ ] Consul 
   - [ ] Etcd 
-- [x] 支持缓存
+- [x] Cached
   - [x] Redis
   - [x] Memcached
-- [x] 日志持久化
+- [x] StorageSchema
   - [x] S3
   - [x] boltdb-shipper
-  - [ ] Canssandra
+  - [ ] Cansandra
   - [ ] GCS
-- [x] 可观察性
+- [x] metrics
   - [x] Redis
   - [x] Memcache
   - [x] Loki
-- [x] 更多的LokiStack产品集成
+- [x] LokiStack
   - [ ] Grafana
   - [ ] Promtail
 
@@ -70,6 +70,7 @@ metadata:
 spec:
   version: 2.2.1
   multitenancy: false
+  servicemonitor: false
   service: 
     mode: single
     single:
@@ -77,7 +78,7 @@ spec:
         image: grafana/loki
   schemaconfig:
     index: boltdb-shipper
-    chunk： filesystem
+    chunk: filesystem
 
   storageconfig:
     boltdb_shipper:
@@ -114,9 +115,9 @@ spec:
       tag: 5.0.6
   schemaconfig:
     index: boltdb-shipper
-    chunk： filesystem
+    chunk: filesystem
 
-  storageconfig$$:
+  storageconfig:
     boltdb_shipper:
       shared_store: filesystem
 

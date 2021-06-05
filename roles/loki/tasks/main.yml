@@ -11,12 +11,11 @@
   when: '{{service.mode == "cluster"}}'
 
 - include_tasks: loki-system.yaml
-  when: '{{service.mode == "single" or service.cluster.type == "ha"}}'
+  when: '{{service.mode == "single" or service.cluster is defined and service.cluster.type == "ha"}}'
 
 - name: Loki Operator | Loki | ConfigMap
   community.kubernetes.k8s:
     definition: "{{ lookup('template', 'loki.config.yaml') | from_yaml }}"
-    force: yes
     merge_type: json
   notify:
     - Scale down single loki 

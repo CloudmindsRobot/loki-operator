@@ -12,3 +12,4 @@
   community.kubernetes.k8s:
     state: '{{"present" if service.mode == "cluster" and servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'frontend/servicemonitor.yaml') | from_yaml }}"
+  when: '{{servicemonitor is defined}}'

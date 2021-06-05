@@ -1,31 +1,32 @@
 - name: Loki Operator | Reids Cache | PersistentVolumeClaims 
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
     definition: "{{ lookup('template', 'redis/pvc.yaml') | from_yaml }}"
 
 - name: Loki Operator | Reids Cache | ConfigMap
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
     definition: "{{ lookup('template', 'redis/configmap.yaml') | from_yaml }}"
 
 - name: Loki Operator | Reids Cache | StatefulSet
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
     definition: "{{ lookup('template', 'redis/statefulset.yaml') | from_yaml }}"
-    force: yes
 
 - name: Loki Operator | Reids Cache | Service
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" else "absent"}}'
     definition: "{{ lookup('template', 'redis/service.yaml') | from_yaml }}"
 
 - name: Loki Operator | Redis Cache | Metrics
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'redis/metrics.yaml') | from_yaml }}"
+  when: '{{servicemonitor is defined}}'
       
 - name: Loki Operator | Redis Cache | ServicesMonitor 
   ignore_errors: yes
   community.kubernetes.k8s:
-    state: '{{"present" if cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor else "absent"}}'
+    state: '{{"present" if cacheconfig is defined and cacheconfig.enabled and cacheconfig.type == "redis" and servicemonitor else "absent"}}'
     definition: "{{ lookup('template', 'redis/servicemonitor.yaml') | from_yaml }}"
+  when: '{{servicemonitor is defined}}'
